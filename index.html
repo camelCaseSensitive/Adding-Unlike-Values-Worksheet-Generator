@@ -438,10 +438,16 @@ function selectedPairs(){
 }
 
 function answerAllowed(value, answerType){
-  const whole=Number.isInteger(value);
+  const whole=Math.abs(value-Math.round(value)) < 1e-9;
   if(answerType==="whole") return whole;
   if(answerType==="fraction") return !whole;
   return true;
+}
+
+function normalizedAnswer(value){
+  // Avoid floating-point artifacts such as 6.9999999998.
+  const rounded=Math.round(value);
+  return Math.abs(value-rounded) < 1e-9 ? rounded : value;
 }
 
 function unitText(pair, qty, side){
@@ -585,21 +591,52 @@ function makeLevel5(pair, answerType){
 }
 
 function makeProblem(pair, level, answerType){
-  // At level 2+, frequently generate "small pieces -> whole unit" problems
-  // such as 6 third-cups + 4 half-cups = ___ cups.
-  if(level>=2 && canUseMixedSubdivisions()){
-    const chance = level===2 ? 0.35 : level===3 ? 0.45 : 0.50;
-    if(seededRandom() < chance){
-      const mixed=makeMixedSubdivisionProblem(answerType, level>=4);
-      if(mixed) return mixed;
+  // Central generation wrapper. Any candidate whose FINAL numeric answer does not
+  // match the selected answer type is rejected and regenerated.
+  for(let attempt=0; attempt<300; attempt++){
+    let p=null;
+
+    // At level 2+, frequently generate "small pieces -> whole unit" problems
+    // such as 6 third-cups + 4 half-cups = ___ cups.
+    if(level>=2 && canUseMixedSubdivisions()){
+      const chance = level===2 ? 0.35 : level===3 ? 0.45 : 0.50;
+      if(seededRandom() < chance){
+        p=makeMixedSubdivisionProblem(answerType, level>=4);
+      }
     }
+
+    if(!p){
+      if(level===1) p=makeLevel1(pair,answerType);
+      else if(level===2) p=makeLevel2(pair,answerType);
+      else if(level===3) p=makeLevel3(pair,answerType);
+      else if(level===4) p=makeLevel4(pair,answerType);
+      else p=makeLevel5(pair,answerType);
+    }
+
+    if(!p) continue;
+
+    // Convert displayed answer text back to a numeric value where possible.
+    let numeric=null;
+    if(typeof p.answer==="number") numeric=p.answer;
+    else if(typeof p.answer==="string"){
+      const s=p.answer.trim();
+      if(/^[-+]?\d+(?:\.\d+)?$/.test(s)) numeric=parseFloat(s);
+      else {
+        const m=s.match(/^([-+]?\d+)\/([1-9]\d*)$/);
+        if(m) numeric=parseInt(m[1],10)/parseInt(m[2],10);
+      }
+    }
+
+    if(numeric===null || !Number.isFinite(numeric)) continue;
+    numeric=normalizedAnswer(numeric);
+
+    if(!answerAllowed(numeric, answerType)) continue;
+
+    p.answer=fmt(numeric);
+    return p;
   }
 
-  if(level===1) return makeLevel1(pair,answerType);
-  if(level===2) return makeLevel2(pair,answerType);
-  if(level===3) return makeLevel3(pair,answerType);
-  if(level===4) return makeLevel4(pair,answerType);
-  return makeLevel5(pair,answerType);
+  return null;
 }
 
 function levelForIndex(i,count,maxLevel,progressive){
@@ -631,6 +668,14 @@ function generateWorksheet(){
     const pair=choice(pairs);
     const p=makeProblem(pair,level,answerType);
     if(!p) continue;
+
+    // Final defensive validation before the problem enters the worksheet.
+    if(answerType==="whole"){
+      let val=null;
+      if(/^[-+]?\d+$/.test(String(p.answer))) val=parseInt(p.answer,10);
+      if(val===null || !Number.isInteger(val)) continue;
+    }
+
     problems.push(p);
   }
 
