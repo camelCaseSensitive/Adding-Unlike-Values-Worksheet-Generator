@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Adding Unlike Units Worksheet Generator</title>
+<style>
+  :root{
+    --bg:#f4f4f4;
+    --panel:#ffffff;
+    --ink:#111;
+    --muted:#666;
+    --line:#d8d8d8;
+    --accent:#222;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+  }
+  .app{
+    display:grid;
+    grid-template-columns:380px 1fr;
+    min-height:100vh;
+  }
+  .controls{
+    background:#fff;
+    border-right:1px solid var(--line);
+    padding:20px;
+    overflow:auto;
+  }
+  h1{font-size:22px;margin:0 0 14px}
+  h2{font-size:16px;margin:22px 0 8px}
+  .sub{color:var(--muted);font-size:13px;line-height:1.45}
+  label{font-size:13px;font-weight:700;display:block;margin:10px 0 4px}
+  input[type="number"], input[type="text"], select, textarea{
+    width:100%;
+    padding:8px 9px;
+    border:1px solid #bbb;
+    border-radius:6px;
+    font:inherit;
+    background:#fff;
+  }
+  textarea{min-height:88px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .checkgrid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:6px 12px;
+    margin-top:6px;
+  }
+  .checkgrid label{
+    font-weight:400;
+    margin:0;
+    display:flex;
+    gap:7px;
+    align-items:center;
+  }
+  button{
+    cursor:pointer;
+    border:1px solid #222;
+    border-radius:7px;
+    padding:10px 12px;
+    font-weight:700;
+    background:#fff;
+  }
+  button.primary{background:#111;color:#fff}
+  .buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}
+  .wide{grid-column:1/-1}
+  .previewWrap{
+    padding:24px;
+    overflow:auto;
+  }
+  .sheet{
+    width:8.5in;
+    height:11in;
+    margin:0 auto 24px;
+    background:white;
+    padding:.55in .6in;
+    box-shadow:0 2px 14px rgba(0,0,0,.12);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .sheet h1{
+    text-align:center;
+    font-size:24px;
+    margin-bottom:6px;
+  }
+  .meta{
+    display:flex;
+    justify-content:space-between;
+    font-size:14px;
+    margin:14px 0 18px;
+  }
+  .directions{
+    border:1px solid #bbb;
+    padding:10px 12px;
+    font-size:14px;
+    margin-bottom:18px;
+    line-height:1.45;
+  }
+  .problems{
+    display:grid;
+    grid-template-columns:1fr;
+    flex:1 1 auto;
+    min-height:0;
+    align-items:stretch;
+  }
+  .problem{
+    font-size:17px;
+    line-height:1.45;
+    min-height:0;
+    align-self:stretch;
+    padding-top:4px;
+  }
+  .num{font-weight:700;display:inline-block;width:30px}
+  .answerline{
+    display:inline-block;
+    min-width:140px;
+    border-bottom:1.5px solid #111;
+    transform:translateY(-2px);
+  }
+  .key{
+    margin-top:18px;
+    padding-top:12px;
+    border-top:1px solid #aaa;
+    font-size:13px;
+  }
+  .key-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:6px 12px;
+  }
+  .note{font-size:12px;color:#666;margin-top:6px}
+  .custom-list{font-size:12px;color:#444;margin-top:6px;white-space:pre-wrap}
+  @media (max-width:900px){
+    .app{grid-template-columns:1fr}
+    .controls{border-right:0;border-bottom:1px solid var(--line)}
+    .sheet{transform-origin:top left}
+  }
+  @media print{
+    body{background:white}
+    .controls{display:none}
+    .previewWrap{padding:0}
+    .sheet{
+      box-shadow:none;
+      margin:0;
+      width:8.5in;
+      height:11in;
+      page-break-after:always;
+    }
+    .sheet:last-child{page-break-after:auto}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="controls">
+    <h1>Adding Unlike Units</h1>
+    <div class="sub">Generate practice that starts with scaling-up/multiplication reasoning and can progress into scaling-down/division, mixed conversions, and fractional answers.</div>
+
+    <h2>Worksheet</h2>
+    <div class="row">
+      <div>
+        <label>Problems</label>
+        <input id="count" type="number" min="4" max="60" value="24">
+      </div>
+      <div>
+        <label>Difficulty</label>
+        <select id="difficulty">
+          <option value="1">1 — Multiply only</option>
+          <option value="2">2 — Mostly multiply</option>
+          <option value="3" selected>3 — Mixed multiply/divide</option>
+          <option value="4">4 — Two-step conversions</option>
+          <option value="5">5 — Advanced mixed</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Answer type</label>
+    <select id="answerType">
+      <option value="whole" selected>Whole-number answers only</option>
+      <option value="fraction">Allow fraction answers</option>
+      <option value="mixed">Mix whole numbers and fractions</option>
+    </select>
+
+    <label>Progressive difficulty</label>
+    <select id="progressive">
+      <option value="yes" selected>Yes — easier to harder</option>
+      <option value="no">No — same difficulty throughout</option>
+    </select>
+
+
+    <h2>Unit Families</h2>
+    <div class="checkgrid" id="unitChecks">
+      <label><input type="checkbox" value="length" checked> Length</label>
+      <label><input type="checkbox" value="capacity" checked> Capacity</label>
+      <label><input type="checkbox" value="weight" checked> Weight</label>
+      <label><input type="checkbox" value="time" checked> Time</label>
+      <label><input type="checkbox" value="money" checked> Money</label>
+      <label><input type="checkbox" value="counting" checked> Dozens/counting</label>
+      <label><input type="checkbox" value="fractions" checked> Fractional pieces</label>
+      <label><input type="checkbox" value="custom" checked> Custom units</label>
+    </div>
+
+    <h2>Custom Units</h2>
+    <div class="sub">One conversion per line. Use the format:<br><b>5280 feet = 1 mile</b><br><b>100 centimeters = 1 meter</b></div>
+    <textarea id="customUnits">5280 feet = 1 mile
+100 centimeters = 1 meter</textarea>
+    <div class="note">Custom pairs are treated as exact conversion relationships.</div>
+
+    <h2>Formatting</h2>
+    <div class="row">
+      <div>
+        <label>Columns</label>
+        <select id="columns">
+          <option value="1" selected>1</option>
+          <option value="2">2</option>
+        </select>
+      </div>
+      <div>
+        <label>Pages</label>
+        <select id="pages">
+          <option value="1" selected>1 page</option>
+          <option value="2">2 pages</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Answer key</label>
+    <select id="answerKey">
+      <option value="yes" selected>Include</option>
+      <option value="no">Hide</option>
+    </select>
+
+    <div class="buttons">
+      <button class="primary wide" onclick="generateWorksheet()">Generate Worksheet</button>
+      <button onclick="window.print()">Print / Save PDF</button>
+      <button onclick="randomizeSeed()">New Version</button>
+    </div>
+  </aside>
+
+  <main class="previewWrap">
+    <div id="preview"></div>
+  </main>
+</div>
+
+<script>
+let seed = Date.now() % 2147483647;
+
+function seededRandom(){
+  seed = (seed * 48271) % 2147483647;
+  return (seed - 1) / 2147483646;
+}
+function randInt(a,b){ return Math.floor(seededRandom()*(b-a+1))+a; }
+function choice(arr){ return arr[Math.floor(seededRandom()*arr.length)]; }
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(seededRandom()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){[a,b]=[b,a%b]} return a||1; }
+function fmt(n){
+  if(Number.isInteger(n)) return String(n);
+  const eps=1e-9;
+  for(let d=2;d<=24;d++){
+    const num=Math.round(n*d);
+    if(Math.abs(num/d-n)<eps){
+      const g=gcd(num,d);
+      return `${num/g}/${d/g}`;
+    }
+  }
+  return String(Math.round(n*1000)/1000);
+}
+function singularizeUnit(unit){
+  const u = unit.trim();
+  const irregular = {
+    feet:"foot",
+    inches:"inch",
+    pennies:"penny",
+    mice:"mouse"
+  };
+  if(irregular[u.toLowerCase()]) return irregular[u.toLowerCase()];
+  if(/ies$/i.test(u)) return u.replace(/ies$/i,"y");
+  if(/(ches|shes|xes|zes)$/i.test(u)) return u.replace(/es$/i,"");
+  if(/s$/i.test(u) && !/ss$/i.test(u)) return u.replace(/s$/i,"");
+  return u;
+}
+
+function pluralize(unit, n){
+  const singular = singularizeUnit(unit);
+  if(Math.abs(n-1)<1e-9) return singular;
+  const irregular = {foot:"feet",inch:"inches",penny:"pennies"};
+  if(irregular[singular]) return irregular[singular];
+  if(/[^aeiou]y$/i.test(singular)) return singular.replace(/y$/i,"ies");
+  if(/(s|x|z|ch|sh)$/i.test(singular)) return singular+"es";
+  return singular+"s";
+}
+
+const families = {
+  length: [
+    {small:"inch", large:"foot", ratio:12},
+    {small:"foot", large:"yard", ratio:3}
+  ],
+  capacity: [
+    {small:"cup", large:"pint", ratio:2},
+    {small:"pint", large:"quart", ratio:2},
+    {small:"quart", large:"gallon", ratio:4}
+  ],
+  weight: [
+    {small:"ounce", large:"pound", ratio:16},
+    {small:"pound", large:"ton", ratio:2000}
+  ],
+  time: [
+    {small:"minute", large:"hour", ratio:60},
+    {small:"hour", large:"day", ratio:24}
+  ],
+  money: [
+    {small:"dime", large:"dollar", ratio:10, money:true},
+    {small:"quarter", large:"dollar", ratio:4, money:true},
+    {small:"nickel", large:"dollar", ratio:20, money:true}
+  ],
+  counting: [
+    {small:"item", large:"dozen", ratio:12, generic:true}
+  ],
+  fractions: [
+    {small:"quarter-piece", large:"whole", ratio:4, fractionPiece:true, label:"quarter-slices"},
+    {small:"sixth-piece", large:"whole", ratio:6, fractionPiece:true, label:"sixth-slices"},
+    {small:"half-cup", large:"cup", ratio:2, food:true, label:"half-cups"},
+    {small:"third-cup", large:"cup", ratio:3, food:true, label:"third-cups"},
+    {small:"quarter-cup", large:"cup", ratio:4, food:true, label:"quarter-cups"}
+  ]
+};
+
+
+const mixedSubdivisionGroups = [
+  {
+    family:"fractions",
+    large:"cup",
+    largeLabel:"cups",
+    context:"cups",
+    parts:[
+      {den:2, singular:"half-cup", plural:"half-cups"},
+      {den:3, singular:"third-cup", plural:"third-cups"},
+      {den:4, singular:"quarter-cup", plural:"quarter-cups"}
+    ]
+  },
+  {
+    family:"fractions",
+    large:"whole pizza",
+    largeLabel:"whole pizzas",
+    context:"pizza",
+    parts:[
+      {den:2, singular:"half-slice", plural:"half-slices"},
+      {den:4, singular:"quarter-slice", plural:"quarter-slices"},
+      {den:6, singular:"sixth-slice", plural:"sixth-slices"},
+      {den:8, singular:"eighth-slice", plural:"eighth-slices"}
+    ]
+  }
+];
+
+function labelCount(n, singular, plural){
+  return `${n} ${Math.abs(n-1)<1e-9 ? singular : plural}`;
+}
+
+function makeMixedSubdivisionProblem(answerType, harder=false){
+  // Combine DIFFERENT fractional subunits that share the same whole unit.
+  // In whole-number mode, construct counts so the final total is an integer.
+  const group=choice(mixedSubdivisionGroups);
+  const parts=shuffle(group.parts).slice(0,2);
+  const p1=parts[0], p2=parts[1];
+
+  for(let tries=0; tries<200; tries++){
+    let q1, q2, ans;
+
+    if(answerType==="whole"){
+      // Build each contribution as a whole-number amount of the target unit.
+      // This keeps answers clean while still requiring denominator reasoning.
+      const whole1=randInt(1, harder ? 5 : 3);
+      const whole2=randInt(1, harder ? 5 : 3);
+      q1=whole1*p1.den;
+      q2=whole2*p2.den;
+      ans=whole1+whole2;
+    } else {
+      q1=randInt(1, harder ? p1.den*5 : p1.den*3);
+      q2=randInt(1, harder ? p2.den*5 : p2.den*3);
+      ans=q1/p1.den + q2/p2.den;
+      if(answerType==="fraction" && Number.isInteger(ans)) continue;
+    }
+
+    if(!answerAllowed(ans,answerType)) continue;
+
+    return {
+      text:`${labelCount(q1,p1.singular,p1.plural)} + ${labelCount(q2,p2.singular,p2.plural)} = ________ ${group.largeLabel}`,
+      answer:fmt(ans),
+      level: harder ? 4 : 3,
+      mixedSubdivision:true
+    };
+  }
+  return null;
+}
+
+function canUseMixedSubdivisions(){
+  return [...document.querySelectorAll('#unitChecks input:checked')].some(x=>x.value==="fractions");
+}
+
+function parseCustom(){
+  const text=document.getElementById("customUnits").value.trim();
+  if(!text) return [];
+  const out=[];
+  for(const line of text.split(/\n+/)){
+    const m=line.trim().match(/^([\d.]+)\s+(.+?)\s*=\s*([\d.]+)\s+(.+)$/);
+    if(!m) continue;
+    const leftNum=parseFloat(m[1]), leftUnit=m[2].trim();
+    const rightNum=parseFloat(m[3]), rightUnit=m[4].trim();
+    if(leftNum>0 && rightNum>0){
+      const ratio=leftNum/rightNum;
+      out.push({small:singularizeUnit(leftUnit), large:singularizeUnit(rightUnit), ratio, custom:true, raw:line.trim()});
+    }
+  }
+  return out;
+}
+
+function selectedPairs(){
+  const checked=[...document.querySelectorAll('#unitChecks input:checked')].map(x=>x.value);
+  let pairs=[];
+  for(const k of checked){
+    if(k==="custom") pairs.push(...parseCustom());
+    else pairs.push(...families[k]);
+  }
+  return pairs;
+}
+
+function answerAllowed(value, answerType){
+  const whole=Number.isInteger(value);
+  if(answerType==="whole") return whole;
+  if(answerType==="fraction") return !whole;
+  return true;
+}
+
+function unitText(pair, qty, side){
+  if(pair.fractionPiece && side==="small") return `${qty} ${pair.label}`;
+  if(pair.food && side==="small") return `${qty} ${pair.label}`;
+  if(pair.generic){
+    return side==="small" ? `${qty} eggs` : `${qty} dozen eggs`;
+  }
+  if(pair.money){
+    if(side==="large") return `$${fmt(qty)}`;
+    return `${qty} ${pluralize(pair.small,qty)}`;
+  }
+  return `${qty} ${pluralize(side==="small"?pair.small:pair.large,qty)}`;
+}
+
+function targetLabel(pair, target){
+  if(pair.money && target==="large") return "dollars";
+  if(pair.generic) return target==="small" ? "eggs" : "dozen eggs";
+  if(pair.fractionPiece) return target==="large" ? "whole pizzas" : pair.label;
+  if(pair.food) return target==="large" ? "cups" : pair.label;
+  return pluralize(target==="small"?pair.small:pair.large,2);
+}
+
+function makeLevel1(pair, answerType){
+  // MULTIPLICATION REASONING ONLY:
+  // convert larger units into smaller units before adding.
+  for(let tries=0;tries<100;tries++){
+    const type=choice(["large_plus_small_to_small","large_plus_small_to_small","large_plus_large_to_small"]);
+    let a,b,ans,text;
+    if(type==="large_plus_large_to_small"){
+      a=randInt(1,5); b=randInt(1,6);
+      ans=(a+b)*pair.ratio;
+      text=`${unitText(pair,a,"large")} + ${unitText(pair,b,"large")} = ________ ${targetLabel(pair,"small")}`;
+    } else {
+      a=randInt(1,5);
+      b=pair.ratio*randInt(1,5);
+      ans=a*pair.ratio+b;
+      text=`${unitText(pair,a,"large")} + ${unitText(pair,b,"small")} = ________ ${targetLabel(pair,"small")}`;
+    }
+    if(answerAllowed(ans,answerType)) return {text,answer:fmt(ans),level:1};
+  }
+  return null;
+}
+
+function makeLevel2(pair, answerType){
+  // Introduces "compose smaller units into larger units."
+  // Heavily biased toward smaller-unit quantities with a larger-unit answer.
+  for(let tries=0;tries<100;tries++){
+    const type=choice(["small_plus_small_to_large","small_plus_small_to_large","small_plus_large_to_large"]);
+    let text, ans;
+
+    if(type==="small_plus_small_to_large"){
+      const k1=randInt(1,5), k2=randInt(1,5);
+      const a=k1*pair.ratio;
+      const b=k2*pair.ratio;
+      ans=k1+k2;
+      text=`${unitText(pair,a,"small")} + ${unitText(pair,b,"small")} = ________ ${targetLabel(pair,"large")}`;
+    } else {
+      const k1=randInt(1,5), b=randInt(1,5);
+      const a=k1*pair.ratio;
+      ans=k1+b;
+      text=`${unitText(pair,a,"small")} + ${unitText(pair,b,"large")} = ________ ${targetLabel(pair,"large")}`;
+    }
+
+    if(answerAllowed(ans,answerType)) return {text,answer:fmt(ans),level:2};
+  }
+}
+
+function makeLevel3(pair, answerType){
+  // either direction, clean whole if selected
+  for(let tries=0;tries<100;tries++){
+    const target=choice(["large","large","large","small"]);
+    if(target==="small"){
+      const a=randInt(1,7), b=randInt(1,7);
+      const ans=a*pair.ratio+b*pair.ratio;
+      if(!answerAllowed(ans,answerType)) continue;
+      return {
+        text:`${unitText(pair,a,"large")} + ${unitText(pair,b,"large")} = ________ ${targetLabel(pair,"small")}`,
+        answer:fmt(ans), level:3
+      };
+    } else {
+      let smallQty;
+      if(answerType==="whole") smallQty=pair.ratio*randInt(1,7);
+      else smallQty=randInt(1,Math.max(2,Math.round(pair.ratio*4)));
+      const largeQty=randInt(1,7);
+      const ans=smallQty/pair.ratio+largeQty;
+      if(!answerAllowed(ans,answerType)) continue;
+      return {
+        text:`${unitText(pair,smallQty,"small")} + ${unitText(pair,largeQty,"large")} = ________ ${targetLabel(pair,"large")}`,
+        answer:fmt(ans), level:3
+      };
+    }
+  }
+}
+
+function makeLevel4(pair, answerType){
+  // two addends chosen independently; target may require two conversions
+  for(let tries=0;tries<200;tries++){
+    const side1=choice(["small","large"]);
+    const side2=choice(["small","large"]);
+    const target=choice(["large","large","small"]);
+    let q1,q2;
+    if(side1==="small"){
+      q1 = answerType==="whole" && target==="large" ? pair.ratio*randInt(1,6) : randInt(1,Math.max(4,Math.round(pair.ratio*5)));
+    } else q1=randInt(1,8);
+    if(side2==="small"){
+      q2 = answerType==="whole" && target==="large" ? pair.ratio*randInt(1,6) : randInt(1,Math.max(4,Math.round(pair.ratio*5)));
+    } else q2=randInt(1,8);
+
+    const inLarge=(side1==="small"?q1/pair.ratio:q1)+(side2==="small"?q2/pair.ratio:q2);
+    const ans=target==="large"?inLarge:inLarge*pair.ratio;
+    if(!answerAllowed(ans,answerType)) continue;
+    return {
+      text:`${unitText(pair,q1,side1)} + ${unitText(pair,q2,side2)} = ________ ${targetLabel(pair,target)}`,
+      answer:fmt(ans), level:4
+    };
+  }
+}
+
+function makeLevel5(pair, answerType){
+  // larger values, deliberately less obvious; supports fractions if allowed
+  for(let tries=0;tries<300;tries++){
+    const target=choice(["large","large","small"]);
+    const side1=choice(["small","large"]);
+    const side2=choice(["small","large"]);
+    let q1 = side1==="small" ? randInt(2,Math.max(6,Math.round(pair.ratio*8))) : randInt(2,15);
+    let q2 = side2==="small" ? randInt(2,Math.max(6,Math.round(pair.ratio*8))) : randInt(2,15);
+
+    if(answerType==="whole" && target==="large"){
+      if(side1==="small") q1=pair.ratio*randInt(1,10);
+      if(side2==="small") q2=pair.ratio*randInt(1,10);
+    }
+    const inLarge=(side1==="small"?q1/pair.ratio:q1)+(side2==="small"?q2/pair.ratio:q2);
+    const ans=target==="large"?inLarge:inLarge*pair.ratio;
+    if(!answerAllowed(ans,answerType)) continue;
+    return {
+      text:`${unitText(pair,q1,side1)} + ${unitText(pair,q2,side2)} = ________ ${targetLabel(pair,target)}`,
+      answer:fmt(ans), level:5
+    };
+  }
+}
+
+function makeProblem(pair, level, answerType){
+  // At level 2+, frequently generate "small pieces -> whole unit" problems
+  // such as 6 third-cups + 4 half-cups = ___ cups.
+  if(level>=2 && canUseMixedSubdivisions()){
+    const chance = level===2 ? 0.35 : level===3 ? 0.45 : 0.50;
+    if(seededRandom() < chance){
+      const mixed=makeMixedSubdivisionProblem(answerType, level>=4);
+      if(mixed) return mixed;
+    }
+  }
+
+  if(level===1) return makeLevel1(pair,answerType);
+  if(level===2) return makeLevel2(pair,answerType);
+  if(level===3) return makeLevel3(pair,answerType);
+  if(level===4) return makeLevel4(pair,answerType);
+  return makeLevel5(pair,answerType);
+}
+
+function levelForIndex(i,count,maxLevel,progressive){
+  if(progressive==="no") return maxLevel;
+  const t=i/Math.max(1,count-1);
+  return Math.max(1, Math.min(maxLevel, Math.ceil((t+0.0001)*maxLevel)));
+}
+
+function generateWorksheet(){
+  const count=Math.max(4,Math.min(60,parseInt(document.getElementById("count").value)||24));
+  const maxLevel=parseInt(document.getElementById("difficulty").value);
+  const answerType=document.getElementById("answerType").value;
+  const progressive=document.getElementById("progressive").value;
+  const pairs=selectedPairs();
+  const cols=parseInt(document.getElementById("columns").value);
+  const pages=parseInt(document.getElementById("pages").value);
+  const showKey=document.getElementById("answerKey").value==="yes";
+
+  if(!pairs.length){
+    document.getElementById("preview").innerHTML="<div class='sheet'><h1>Select at least one unit family.</h1></div>";
+    return;
+  }
+
+  const problems=[];
+  let safety=0;
+  while(problems.length<count && safety<5000){
+    safety++;
+    const level=levelForIndex(problems.length,count,maxLevel,progressive);
+    const pair=choice(pairs);
+    const p=makeProblem(pair,level,answerType);
+    if(!p) continue;
+    problems.push(p);
+  }
+
+  const refBox=`<div class="directions"><b>Directions:</b> Convert the quantities to the same unit, then add. Show your work.</div>`;
+
+  const answerKeyPage=showKey ? `
+    <section class="sheet">
+      <h1>Adding Unlike Units — Answer Key</h1>
+      <div class="key" style="border-top:0;margin-top:20px;padding-top:0;">
+        <div class="key-grid">
+          ${problems.map((p,i)=>`<div>${i+1}. ${p.answer}</div>`).join("")}
+        </div>
+      </div>
+    </section>` : "";
+
+  const perPage=Math.ceil(problems.length/pages);
+  const pageHtml=[];
+
+  for(let pageIndex=0; pageIndex<pages; pageIndex++){
+    const startIndex=pageIndex*perPage;
+    const endIndex=Math.min(startIndex+perPage, problems.length);
+    const pageProblems=problems.slice(startIndex,endIndex);
+
+    if(pageProblems.length===0) continue;
+
+    const pageLabel=pages>1
+      ? `<div style="text-align:right;font-size:11px;color:#666;margin-top:-2px;margin-bottom:8px;">Page ${pageIndex+1} of ${pages}</div>`
+      : "";
+
+    pageHtml.push(`
+      <section class="sheet">
+        <h1>Adding Unlike Units</h1>
+        ${pageLabel}
+        <div class="meta"><span>Name: ______________________________</span><span>Date: ________________</span></div>
+        ${refBox}
+        <div class="problems"
+             style="
+               grid-template-columns:repeat(${cols},1fr);
+               grid-template-rows:repeat(${Math.ceil(pageProblems.length/cols)},1fr);
+               column-gap:28px;
+               row-gap:0;
+             ">
+          ${pageProblems.map((p,j)=>`
+            <div class="problem">
+              <span class="num">${startIndex+j+1})</span>${p.text}
+            </div>`).join("")}
+        </div>
+      </section>`);
+  }
+
+  const html=pageHtml.join("") + answerKeyPage;
+  document.getElementById("preview").innerHTML=html;
+}
+
+function randomizeSeed(){
+  seed = (Date.now()+Math.floor(Math.random()*1000000)) % 2147483647;
+  generateWorksheet();
+}
+
+generateWorksheet();
+</script>
+</body>
+</html>
